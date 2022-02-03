@@ -1,0 +1,8 @@
+a=0
+def func(a, b){
+    return a + b
+}
+
+def main() {
+
+}
