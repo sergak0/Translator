@@ -3,7 +3,9 @@
 1) Присвоение к переменной
 2) if/else
 3) while
-4) list
-5) comments
-6) input, print
-7) объявление и вызов функций
+4) comments
+5) input, print
+6) объявление и вызов функций
+
+Типы
+int, double, string (==char), list, bool
