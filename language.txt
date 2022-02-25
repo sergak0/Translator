@@ -1,6 +1,6 @@
 <Program> ::= <Func><Program> | <Definition>;<Program> | <Func> | <Definition>;
 
-<Func> ::= <EType> <Имя> (<Params>) <Block> 
+<Func> ::= fn <EType> <Имя> (<Params>) <Block>
 
 <EType> ::= <EType>[] | <Type>
 <Type> ::= int | double | string
