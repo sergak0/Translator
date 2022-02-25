@@ -1,5 +1,6 @@
 import string
 
+
 class Token:
     def __init__(self, text, type):
         self.text = text
