@@ -1,5 +1,6 @@
 import string
 
+'''delete me'''
 
 class Token:
     def __init__(self, text, type):
