@@ -1,0 +1,16 @@
+for (int i = 0; i < n; ++i) {
+
+}
+
+int a = 1;
+
+how are you
+
+a[1] = 2;
+
+;;;
+
+forwhile
+int a - for
+for + while = ifififififi fi if ifi if if
+
