@@ -9,6 +9,9 @@ class Token:
     def __str__(self):
         return self.text + " - " + self.type
 
+    def __eq__(self, other):
+        return self.text == other
+
 
 class Node:
     def __init__(self, node_type="no_type"):
