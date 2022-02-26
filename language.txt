@@ -1,0 +1,41 @@
+<Program> ::= <Func><Program> | <Definition>;<Program> | <Func> | <Definition>;
+
+<Func> ::= fn <EType> <Имя> (<Params>) <Block>
+
+<EType> ::= <EType>[] | <Type>
+<Type> ::= int | double | string
+
+
+<Имя> ::= <Буква>|<Имя><Буква>|<Имя><Цифра>
+<Params> ::= <EType><Имя>{,<Params>}
+
+<Block> ::= { {<Operator>} }
+<Operator> ::= <for> | <while> | <if> | <return> | <Block> | <Exp>; | <Definition>; | <Enumeration>; 
+
+<for> ::= for (<Definition>;<Exp>;<Exp>;) <Block>
+
+<Definition> ::= <EType><Имя>[=<Exp>]{,<Имя>[=<Exp>]}
+
+<if> ::= if (<Exp>) <Block> [else <Block>]
+
+<while> ::= while (<Exp>) <Block>
+
+<return> ::= return <Exp>;
+
+<Prior1> ::= (<Exp>) | <Name>(<Enumeration>) | <Name>() | <Name>[<Exp>] | <Name>
+
+<Prior2> ::= ++<Prior2> | --<Prior2> | -<Prior2> | <Prior1> | <Const>
+
+<Prior4> ::= <Prior3>*<Prior4> | <Prior3>/<Prior4> | <Prior3>%<Prior4> | <Prior3>
+
+<Prior5> ::= <Prior4>+<Prior5> | <Prior4>-<Prior5> | <Prior4>
+
+<Prior6> ::= <Prior5>><Prior6> | <Prior5><<Prior6> | <Prior5>>=<Prior6> | <Prior5><=<Prior6> | <Prior5>
+
+<Prior7> ::= <Prior6>==<Prior7> | <Prior6>!=<Prior7> | <Prior6>
+
+<Prior8> ::= <Prior7>&<Prior8> | <Prior7>|<Prior8> | <Prior7>^<Prior8> | <Prior7>
+
+<Exp> ::= <Prior8>	
+
+<Enumeration> ::= <Exp>{,<Exp>}

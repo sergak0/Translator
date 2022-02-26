@@ -1,5 +1,6 @@
 import string
 
+
 class Token:
     def __init__(self, text, type):
         self.text = text
@@ -7,6 +8,9 @@ class Token:
 
     def __str__(self):
         return self.text + " - " + self.type
+
+    def __eq__(self, other):
+        return self.text == other
 
 
 class Node:
