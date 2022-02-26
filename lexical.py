@@ -62,7 +62,7 @@ class FSM:
 
 
 # read file
-text = open('text.txt', 'r').readlines()
+text = open('examples/text.txt', 'r').readlines()
 text = ' '.join(text)
 text = [i for i in text if i != '\n']
 
