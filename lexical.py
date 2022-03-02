@@ -29,11 +29,12 @@ class FSM:
             self.nodes.append(Node(state))
         self.posible_symbols = set(lines[2])
         for edges in lines[3:]:
-            v, u, symbols = int(edges[0]), int(edges[2]), edges[11:-8]
+            v, u, symbols = int(edges[0:2]), int(edges[3:5]), edges[13:-8]
             for symbol in symbols:
                 self.nodes[v].go[ord(symbol)] = u
 
     def process(self, text):
+        text += ' '
         tokens = []
         current_id = 0
         current_token = ''
@@ -59,25 +60,3 @@ class FSM:
                 current_token += symbol
                 idx += 1
         return tokens
-
-
-# read file
-text = open('examples/text.txt', 'r').readlines()
-text = ' '.join(text)
-text = [i for i in text if i != '\n']
-
-special_tokens_inversed = {
-    'operator': ['++', '+', '-', '=', '-', '<', '>'],
-    'reserved': ['for', 'while', 'if', 'int'],
-    '[]': ['[', ']'],
-    '()': ['(', ')']
-}
-
-special_tokens = {}
-for key, values in special_tokens_inversed.items():
-    for value in values:
-        special_tokens[value] = key
-
-fsm = FSM(special_tokens)
-[print(i) for i in fsm.process(text)]
-

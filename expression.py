@@ -65,7 +65,7 @@ def build_polis(text):
         elif el == ')' or el == ']':
             while len(st) and st[-1] != brace_pair[el]:
                 if st[-1] in brace_pair.keys():
-                    raise 'brace does not match each other'
+                    raise Exception('brace does not match each other')
 
                 res.append(st[-1])
                 st.pop()

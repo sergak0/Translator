@@ -1,19 +1,24 @@
-11
-error numeric_const numeric_const error error string_const name special_symbol space punctuation <EOS>
+16
+error numeric_const numeric_const error error string_const name special_symbol space punctuation special_symbol special_symbol special_symbol special_symbol special_symbol special_symbol <EOS>
 "! #$%&'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\]^_`abcdefghijklmnopqrstuvwxyz{|}~
-0 1 <EDGES>0123456789<EDGES>
-1 1 <EDGES>0123456789<EDGES>
-1 2 <EDGES>.<EDGES>
-2 2 <EDGES>0123456789
-0 3 <EDGES>"<EDGES>
-3 4 <EDGES>! #$%&'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\]^_`abcdefghijklmnopqrstuvwxyz{|}~<EDGES>
-4 4 <EDGES>! #$%&'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\]^_`abcdefghijklmnopqrstuvwxyz{|}~
-3 5 <EDGES>"<EDGES>
-4 5 <EDGES>"<EDGES>
-0 6 <EDGES>abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ_<EDGES>
-6 6 <EDGES>abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ_0123456789<EDGES>
-0 7 <EDGES>~!%^&*()-=+[]:<>/.|<EDGES>
-7 7 <EDGES>~!%^&*()-=+[]:<>/.|<EDGES>
-0 8 <EDGES> <EDGES>
-8 8 <EDGES> <EDGES>
-0 9 <EDGES>;,{}<EDGES>
+00 01 <EDGES>0123456789<EDGES>
+01 01 <EDGES>0123456789<EDGES>
+01 02 <EDGES>.<EDGES>
+02 02 <EDGES>0123456789
+00 03 <EDGES>"<EDGES>
+03 04 <EDGES>! #$%&'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\]^_`abcdefghijklmnopqrstuvwxyz{|}~<EDGES>
+04 04 <EDGES>! #$%&'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\]^_`abcdefghijklmnopqrstuvwxyz{|}~
+03 05 <EDGES>"<EDGES>
+04 05 <EDGES>"<EDGES>
+00 06 <EDGES>abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ_<EDGES>
+06 06 <EDGES>abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ_0123456789<EDGES>
+00 07 <EDGES>+<EDGES>
+00 08 <EDGES> <EDGES>
+08 08 <EDGES> <EDGES>
+00 09 <EDGES>;,{}<EDGES>
+07 10 <EDGES>+<EDGES>
+00 11 <EDGES>-<EDGES>
+11 12 <EDGES>-<EDGES>
+00 13 <EDGES>*/%&|^()[]<EDGES>
+00 14 <EDGES>><=!<EDGES>
+14 15 <EDGES>=<EDGES>

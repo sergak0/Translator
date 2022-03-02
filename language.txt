@@ -2,10 +2,10 @@
 
 <Func> ::= fn <Type> <Имя> (<Params>) <Block>
 
-<Type> ::= <EType>[] | int | double | string
+<Type> ::= int{[]} | double{[]} | string{[]}
 
 <Name> ::= <Letter>|<Name><Letter>|<Name><Digit>
-<Params> ::= <Type><Name>{,<Params>}
+<Params> ::= [<Type><Name>{,<Type><Name>}]
 
 <Block> ::= { {<Operator>} }
 <Operator> ::= <for> | <while> | <if> | <return> | <Block> | <Exp>; | <Definition>; | <Enumeration>; 
@@ -20,20 +20,23 @@
 
 <return> ::= return <Exp>;
 
-<Prior1> ::= (<Exp>) | <Name>(<Enumeration>) | <Name>() | <Name>{[<Exp>]} | <Name>
+<Prior1> ::= (<Exp>) | <Name>(<Enumeration>) | <Name>() | <Name>{[<Exp>]}
 
 <Prior2> ::= ++<Prior2> | --<Prior2> | -<Prior2> | <Prior1> | <Const>
 
-<Prior4> ::= <Prior3>*<Prior4> | <Prior3>/<Prior4> | <Prior3>%<Prior4> | <Prior3>
+<Prior3> ::= <Prior2>*<Prior3> | <Prior2>/<Prior3> | <Prior2>%<Prior3> | <Prior2>
 
-<Prior5> ::= <Prior4>+<Prior5> | <Prior4>-<Prior5> | <Prior4>
+<Prior4> ::= <Prior3>+<Prior4> | <Prior3>-<Prior4> | <Prior3>
 
-<Prior6> ::= <Prior5>><Prior6> | <Prior5><<Prior6> | <Prior5>>=<Prior6> | <Prior5><=<Prior6> | <Prior5>
+<Prior5> ::= <Prior4>><Prior5> | <Prior4><<Prior5> | <Prior4>>=<Prior5> | <Prior4><=<Prior5> | <Prior4>
 
-<Prior7> ::= <Prior6>==<Prior7> | <Prior6>!=<Prior7> | <Prior6>
+<Prior6> ::= <Prior5>==<Prior6> | <Prior5>!=<Prior6> | <Prior5>
 
-<Prior8> ::= <Prior7>&<Prior8> | <Prior7>|<Prior8> | <Prior7>^<Prior8> | <Prior7>
+<Prior7> ::= <Prior6>&<Prior7> | <Prior6>|<Prior7> | <Prior6>^<Prior7> | <Prior6>
 
-<Exp> ::= <Prior8>	
+<Prior8> ::= <Prior7>=<Prior8>  | <Prior7>
+
+
+<Exp> ::= <Prior7>
 
 <Enumeration> ::= <Exp>{,<Exp>}

@@ -1,16 +1,3 @@
-for (int i = 0; i < n; ++i) {
-
+fn int a() {
+    f(a, b, 1 + 4);
 }
-
-int a = 1;
-
-how are you
-
-a[1] = 2;
-
-;;;
-
-forwhile
-int a - for
-for + while = ifififififi fi if ifi if if
-
