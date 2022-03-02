@@ -1,20 +1,18 @@
 <Program> ::= <Func><Program> | <Definition>;<Program> | <Func> | <Definition>;
 
-<Func> ::= fn <EType> <Имя> (<Params>) <Block>
+<Func> ::= fn <Type> <Имя> (<Params>) <Block>
 
-<EType> ::= <EType>[] | <Type>
-<Type> ::= int | double | string
+<Type> ::= <EType>[] | int | double | string
 
-
-<Имя> ::= <Буква>|<Имя><Буква>|<Имя><Цифра>
-<Params> ::= <EType><Имя>{,<Params>}
+<Name> ::= <Letter>|<Name><Letter>|<Name><Digit>
+<Params> ::= <Type><Name>{,<Params>}
 
 <Block> ::= { {<Operator>} }
 <Operator> ::= <for> | <while> | <if> | <return> | <Block> | <Exp>; | <Definition>; | <Enumeration>; 
 
-<for> ::= for (<Definition>;<Exp>;<Exp>;) <Block>
+<for> ::= for (<Definition>;<Exp>;<Exp>) <Block>
 
-<Definition> ::= <EType><Имя>[=<Exp>]{,<Имя>[=<Exp>]}
+<Definition> ::= <Type><Имя>[=<Exp>]{,<Имя>[=<Exp>]}
 
 <if> ::= if (<Exp>) <Block> [else <Block>]
 
@@ -22,7 +20,7 @@
 
 <return> ::= return <Exp>;
 
-<Prior1> ::= (<Exp>) | <Name>(<Enumeration>) | <Name>() | <Name>[<Exp>] | <Name>
+<Prior1> ::= (<Exp>) | <Name>(<Enumeration>) | <Name>() | <Name>{[<Exp>]} | <Name>
 
 <Prior2> ::= ++<Prior2> | --<Prior2> | -<Prior2> | <Prior1> | <Const>
 
