@@ -341,8 +341,8 @@ if __name__ == "__main__":
     tokens = fsm.process(text)
     for token in tokens:
         print(token)
-    print('Syntactic: ')
+    print('Syntactic and Semantic: ')
     Program(0)
-    print('You are the god')
+
 
 
