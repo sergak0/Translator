@@ -34,7 +34,7 @@ class FSM:
                 self.nodes[v].go[ord(symbol)] = u
 
     def process(self, text):
-        text += ' '
+        text += '`'
         tokens = []
         current_id = 0
         current_token = ''
