@@ -3,6 +3,8 @@ fn int f(double[] a, double b, string c) {
 
 }
 fn void main() {
-    string a;
-    a[1];
+    int a = 1;
+    if (a == "2") {
+
+    }
 }

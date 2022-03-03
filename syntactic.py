@@ -321,7 +321,7 @@ def Prior2(idx):
         polis.do(['~'])
         return idx
     if tokens[idx].type == 'string_const':
-        polis.push_type(['string', 0])
+        polis.push_type(['string', 1])
         return idx + 1
     if tokens[idx].type == 'numeric_const':
         polis.push_type(['int', 0])
