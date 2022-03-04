@@ -1,10 +1,14 @@
-int a = 1;
-fn int f(double[] a, double b, string c) {
 
+fn void f(double[] a, double b, string c) {
+    return 5;
 }
+
+
 fn void main() {
     int a = 1;
-    if (a == "2") {
+    double[] d;
+    d[2] = 3;
+    int i;
 
-    }
+
 }

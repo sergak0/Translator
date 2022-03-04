@@ -17,6 +17,7 @@ special_tokens = {}
 
 currentTID = TID()
 polis = ExpChecker()
+func_type = None
 
 
 
@@ -43,6 +44,7 @@ def Program(idx):
 
 def Func(idx):
     global currentTID
+    global func_type
     CheckToken(idx, 'fn')
     idx += 1
     idx, dtype, cnt = FuncType(idx, 1)
@@ -50,12 +52,13 @@ def Func(idx):
     if idx == len(tokens) or tokens[idx] != '(':
         raise Exception('Expect (')
     idx += 1
-    idx, params = Params(idx, 1)
+    idx, params, names = Params(idx, 1)
     currentTID.put(name, ['fn', [[dtype, cnt], params]])
+    func_type = [dtype, cnt]
     if idx == len(tokens) or tokens[idx] != ')':
         raise Exception('Expect )')
     idx += 1
-    idx = Block(idx)
+    idx = Block(idx, names=names, types=params)
     return idx
 
 
@@ -116,28 +119,33 @@ def Name(idx, ask=0):
 def Params(idx, ask=0):
     if idx == len(tokens) or (tokens[idx] != 'int' and tokens[idx] != 'double' and tokens[idx] != 'string'):
         if ask:
-            return idx, []
+            return idx, [], []
         return idx
     params = []
+    names = []
     idx, dtype, cnt = Type(idx, 1)
     params.append([dtype, cnt])
-    idx = Name(idx)
+    idx, name = Name(idx, 1)
+    names.append(name)
     while idx != len(tokens) and tokens[idx] == ',':
         idx += 1
         idx, dtype, cnt = Type(idx, 1)
         params.append([dtype, cnt])
-        idx = Name(idx)
+        idx, name = Name(idx, 1)
+        names.append(name)
     if ask:
-        return idx, params
+        return idx, params, names
     return idx
 
 
-def Block(idx, need_new_TID=1):
+def Block(idx, need_new_TID=1, names=[], types=[]):
     global currentTID
     CheckToken(idx, '{')
     idx += 1
     if need_new_TID:
         currentTID = TID(currentTID)
+    for name, type in zip(names, types):
+        currentTID.put(name, type)
     while True:
         if idx == len(tokens):
             raise Exception('Expect }')
@@ -250,6 +258,12 @@ def Return(idx):
     CheckToken(idx, 'return')
     idx += 1
     idx = Exp(idx)
+
+    dtype = polis.stack.pop()
+    if dtype != func_type:
+        raise Exception('Function return wrong type')
+
+
     CheckToken(idx, ';')
     idx += 1
     return idx
