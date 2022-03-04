@@ -1,4 +1,5 @@
 from lexical import *
+from semantic_classes import *
 import ctypes
 import re
 
@@ -7,12 +8,17 @@ tokens = []  # List of lexical/Token
 special_tokens_inversed = {
     'operator': ['++', '--', '-', '*', '/', '%', '+', '>', '<', '>=', '<=', '==', '!=', '&', '|', '%', '=', '^'],
     'punctuation': [';', ',', '{', '}'],
-    'reserved': ['for', 'while', 'if', 'int', 'double', 'string', 'fn', 'return'],
+    'reserved': ['for', 'while', 'if', 'void', 'int', 'double', 'string', 'fn', 'return'],
     '[]': ['[', ']'],
     '()': ['(', ')']
 }
 
 special_tokens = {}
+
+currentTID = TID()
+polis = ExpChecker()
+func_type = None
+
 
 
 def CheckToken(idx, token):
@@ -32,60 +38,114 @@ def Program(idx):
         if idx != len(tokens):
             idx = Program(idx)
     elif idx != len(tokens):
-        raise Exception('Unexpected symbol')
+        raise Exception('Expect fn or variable type')
     return idx
 
 
 def Func(idx):
+    global currentTID
+    global func_type
     CheckToken(idx, 'fn')
     idx += 1
-    idx = Type(idx)
-    idx = Name(idx)
+    idx, dtype, cnt = FuncType(idx, 1)
+    idx, name = Name(idx, 1)
     if idx == len(tokens) or tokens[idx] != '(':
         raise Exception('Expect (')
     idx += 1
-    idx = Params(idx)
+    idx, params, names = Params(idx, 1)
+    currentTID.put(name, ['fn', [[dtype, cnt], params]])
+    func_type = [dtype, cnt]
     if idx == len(tokens) or tokens[idx] != ')':
         raise Exception('Expect )')
     idx += 1
-    idx = Block(idx)
+    idx = Block(idx, names=names, types=params)
     return idx
 
 
-def Type(idx):
+def FuncType(idx, ask=0):
     if idx == len(tokens):
         raise Exception('Expect variable type')
+    if tokens[idx] == 'void':
+        if ask:
+            return idx + 1, 'void', 0
+        return idx + 1
     if tokens[idx] != 'int' and tokens[idx] != 'double' and tokens[idx] != 'string':
         raise Exception('Unknown type encountered')
+    dtype = tokens[idx].text
     idx += 1
+    cnt = 0
     while idx != len(tokens) and tokens[idx] == '[':
         idx += 1
         CheckToken(idx, ']')
         idx += 1
+        cnt += 1
+    if ask:
+        if dtype == 'string':
+            cnt += 1
+        return idx, dtype, cnt
     return idx
 
 
-def Name(idx):
+def Type(idx, ask_type=0):
+    if idx == len(tokens):
+        raise Exception('Expect variable type')
+    if tokens[idx] != 'int' and tokens[idx] != 'double' and tokens[idx] != 'string':
+        raise Exception('Unknown type encountered')
+    dtype = tokens[idx].text
+    idx += 1
+    cnt = 0
+    while idx != len(tokens) and tokens[idx] == '[':
+        idx += 1
+        CheckToken(idx, ']')
+        idx += 1
+        cnt += 1
+    if ask_type:
+        if dtype == 'string':
+            cnt += 1
+        return idx, dtype, cnt
+    return idx
+
+
+def Name(idx, ask=0):
     if idx == len(tokens) or tokens[idx].type != 'name':
         raise Exception('Expect variable name')
+    name = tokens[idx].text
     idx += 1
+    if ask:
+        return idx, name
     return idx
 
 
-def Params(idx):
+def Params(idx, ask=0):
     if idx == len(tokens) or (tokens[idx] != 'int' and tokens[idx] != 'double' and tokens[idx] != 'string'):
+        if ask:
+            return idx, [], []
         return idx
-    idx = Type(idx)
-    idx = Name(idx)
+    params = []
+    names = []
+    idx, dtype, cnt = Type(idx, 1)
+    params.append([dtype, cnt])
+    idx, name = Name(idx, 1)
+    names.append(name)
     while idx != len(tokens) and tokens[idx] == ',':
         idx += 1
-        idx = Params(idx)
+        idx, dtype, cnt = Type(idx, 1)
+        params.append([dtype, cnt])
+        idx, name = Name(idx, 1)
+        names.append(name)
+    if ask:
+        return idx, params, names
     return idx
 
 
-def Block(idx):
+def Block(idx, need_new_TID=1, names=[], types=[]):
+    global currentTID
     CheckToken(idx, '{')
     idx += 1
+    if need_new_TID:
+        currentTID = TID(currentTID)
+    for name, type in zip(names, types):
+        currentTID.put(name, type)
     while True:
         if idx == len(tokens):
             raise Exception('Expect }')
@@ -93,18 +153,27 @@ def Block(idx):
             idx += 1
             break
         idx = Operator(idx)
+    if need_new_TID:
+        currentTID = currentTID.parent
     return idx
 
 
 def Operator(idx):
+    global currentTID
     if idx == len(tokens):
         raise Exception('Expect operator definition')
     if tokens[idx] == 'for':
+        currentTID = TID(currentTID)
         idx = For(idx)
+        currentTID = currentTID.parent
     elif tokens[idx] == 'while':
+        currentTID = TID(currentTID)
         idx = While(idx)
+        currentTID = currentTID.parent
     elif tokens[idx] == 'if':
+        currentTID = TID(currentTID)
         idx = If(idx)
+        currentTID = currentTID.parent
     elif tokens[idx] == 'return':
         idx = Return(idx)
     elif tokens[idx] == 'int' or tokens[idx] == 'double' or tokens[idx] == 'string':
@@ -132,22 +201,29 @@ def For(idx):
     idx = Exp(idx)
     CheckToken(idx, ')')
     idx += 1
-    idx = Block(idx)
+    idx = Block(idx, 0)
     return idx
 
 
 def Definition(idx):
-    idx = Type(idx)
-    idx = Name(idx)
+    idx, dtype, cnt = Type(idx, 1)
+    idx, name = Name(idx, 1)
+    currentTID.put(name, [dtype, cnt])
     if idx != len(tokens) and tokens[idx] == '=':
+        polis.push_type([dtype, cnt])
         idx += 1
         idx = Exp(idx)
+        polis.do(['='])
+
     while idx != len(tokens) and tokens[idx] == ',':
         idx += 1
-        idx = Name(idx)
+        idx, name = Name(idx, 1)
+        currentTID.put(name, [dtype, cnt])
         if idx != len(tokens) and tokens[idx] == '=':
+            polis.push_type([dtype, cnt])
             idx += 1
             idx = Exp(idx)
+            polis.do(['='])
     return idx
 
 
@@ -180,15 +256,28 @@ def While(idx):
 
 def Return(idx):
     CheckToken(idx, 'return')
+    idx += 1
     idx = Exp(idx)
+
+    dtype = polis.stack.pop()
+    if dtype != func_type:
+        raise Exception('Function return wrong type')
+
+
+    CheckToken(idx, ';')
+    idx += 1
     return idx
 
 
-def Enumeration(idx):
+def Enumeration(idx, ask=0):
     idx = Exp(idx)
+    cnt = 0
     while idx != len(tokens) and tokens[idx] == ',':
         idx += 1
         idx = Exp(idx)
+        cnt += 1
+    if ask:
+        return idx, cnt + 1
     return idx
 
 
@@ -199,20 +288,31 @@ def Prior1(idx):
         idx = Exp(idx + 1)
         CheckToken(idx, ')')
         return idx + 1
-    idx = Name(idx)
+
+    idx, name = Name(idx, 1)
+    dtype = currentTID.get(name)
+
     if idx != len(tokens) and tokens[idx] == '(':
         idx += 1
         if idx != len(tokens) and tokens[idx] == ')':
+            if len(dtype[1][1]):
+                raise Exception('Wrong count of parameters')
+            polis.do(dtype[1])
             return idx + 1
         else:
-            idx = Enumeration(idx)
+            idx, cnt = Enumeration(idx, 1)
+            if len(dtype[1][1]) != cnt:
+                raise Exception('Wrong count of parameters')
+            polis.do(dtype[1])
             CheckToken(idx, ')')
             return idx + 1
 
+    polis.push_type(dtype)
     while idx != len(tokens) and tokens[idx] == '[':
         idx = Exp(idx + 1)
         CheckToken(idx, ']')
         idx += 1
+        polis.do(['[]'])
     return idx
 
 
@@ -221,14 +321,27 @@ def Prior2(idx):
         raise Exception('Expression fault')
     if tokens[idx] == '--':
         idx += 1
-        return Prior2(idx)
+        idx = Prior2(idx)
+        polis.do(['--'])
+        return idx
     if tokens[idx] == '++':
         idx += 1
-        return Prior2(idx)
+        idx = Prior2(idx)
+        polis.do(['++'])
+        return idx
     if tokens[idx] == '-':
         idx += 1
-        return Prior2(idx)
-    if tokens[idx].type == 'string_const' or tokens[idx].type == 'numeric_const':
+        idx = Prior2(idx)
+        polis.do(['~'])
+        return idx
+    if tokens[idx].type == 'string_const':
+        polis.push_type(['string', 1])
+        return idx + 1
+    if tokens[idx].type == 'numeric_const':
+        polis.push_type(['int', 0])
+        return idx + 1
+    if tokens[idx].type == 'double_const':
+        polis.push_type(['double', 0])
         return idx + 1
     return Prior1(idx)
 
@@ -239,13 +352,19 @@ def Prior3(idx):
     idx = Prior2(idx)
     if tokens[idx] == '*':
         idx += 1
-        return Prior3(idx)
+        idx = Prior3(idx)
+        polis.do(['*'])
+        return idx
     if tokens[idx] == '/':
         idx += 1
-        return Prior3(idx)
+        idx = Prior3(idx)
+        polis.do(['/'])
+        return idx
     if tokens[idx] == '%':
         idx += 1
-        return Prior3(idx)
+        idx = Prior3(idx)
+        polis.do(['%'])
+        return idx
     return idx
 
 
@@ -255,10 +374,14 @@ def Prior4(idx):
     idx = Prior3(idx)
     if tokens[idx] == '+':
         idx += 1
-        return Prior4(idx)
+        idx = Prior4(idx)
+        polis.do(['+'])
+        return idx
     if tokens[idx] == '-':
         idx += 1
-        return Prior4(idx)
+        idx = Prior4(idx)
+        polis.do(['-'])
+        return idx
     return idx
 
 
@@ -268,16 +391,24 @@ def Prior5(idx):
     idx = Prior4(idx)
     if tokens[idx] == '>':
         idx += 1
-        return Prior5(idx)
+        idx = Prior5(idx)
+        polis.do(['>'])
+        return idx
     if tokens[idx] == '<':
         idx += 1
-        return Prior5(idx)
+        idx = Prior5(idx)
+        polis.do(['<'])
+        return idx
     if tokens[idx] == '>=':
         idx += 1
-        return Prior5(idx)
+        idx = Prior5(idx)
+        polis.do(['>='])
+        return idx
     if tokens[idx] == '<=':
         idx += 1
-        return Prior5(idx)
+        idx = Prior5(idx)
+        polis.do(['<='])
+        return idx
     return idx
 
 
@@ -287,10 +418,14 @@ def Prior6(idx):
     idx = Prior5(idx)
     if tokens[idx] == '==':
         idx += 1
-        return Prior6(idx)
+        idx = Prior6(idx)
+        polis.do(['=='])
+        return idx
     if tokens[idx] == '!=':
         idx += 1
-        return Prior6(idx)
+        idx = Prior6(idx)
+        polis.do(['!='])
+        return idx
     return idx
 
 
@@ -300,13 +435,19 @@ def Prior7(idx):
     idx = Prior6(idx)
     if tokens[idx] == '&':
         idx += 1
-        return Prior7(idx)
+        idx = Prior7(idx)
+        polis.do(['&'])
+        return idx
     if tokens[idx] == '|':
         idx += 1
-        return Prior7(idx)
+        idx = Prior7(idx)
+        polis.do(['|'])
+        return idx
     if tokens[idx] == '^':
         idx += 1
-        return Prior7(idx)
+        idx = Prior7(idx)
+        polis.do(['^'])
+        return idx
     return idx
 
 
@@ -316,7 +457,9 @@ def Prior8(idx):
     idx = Prior7(idx)
     if tokens[idx] == '=':
         idx += 1
-        return Prior8(idx)
+        idx = Prior8(idx)
+        polis.do(['='])
+        return idx
     return idx
 
 
@@ -341,8 +484,7 @@ if __name__ == "__main__":
     tokens = fsm.process(text)
     for token in tokens:
         print(token)
-    print('Syntactic: ')
+    print('Syntactic and Semantic: ')
     Program(0)
-    print('You are the god')
-
-
+    if 'main' not in currentTID.objects or currentTID.objects['main'] != ['fn', [['void', 0], []]]:
+        raise Exception("Expect fn int main() in program")

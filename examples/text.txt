@@ -1,3 +1,14 @@
-fn int a() {
-    f(a, b, 1 + 4);
+
+fn void f(double[] a, double b, string c) {
+    return 5;
+}
+
+
+fn void main() {
+    int a = 1;
+    double[] d;
+    d[2] = 3;
+    int i;
+
+
 }

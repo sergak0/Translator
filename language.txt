@@ -2,6 +2,7 @@
 
 <Func> ::= fn <Type> <Имя> (<Params>) <Block>
 
+<FuncType> ::= int{[]} | double{[]} | string{[]} | nothing
 <Type> ::= int{[]} | double{[]} | string{[]}
 
 <Name> ::= <Letter>|<Name><Letter>|<Name><Digit>
@@ -37,6 +38,6 @@
 <Prior8> ::= <Prior7>=<Prior8>  | <Prior7>
 
 
-<Exp> ::= <Prior7>
+<Exp> ::= <Prior8>
 
 <Enumeration> ::= <Exp>{,<Exp>}
