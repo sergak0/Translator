@@ -1,36 +1,49 @@
-class TID:
-    def __init__(self, parent=None):
-        self.parent = parent
-        self.objects = {}
+from tid import TID
+from utils import OperandType
+from typing import List
 
-    def check(self, name):
-        if name in self.objects:
-            return 2
-        if self.parent is not None and self.parent.check(name):
-            return 1
-        return 0
 
-    def get(self, name):
-        if name in self.objects:
-            return self.objects[name]
-        if self.parent is not None:
-            return self.parent.get(name)
-        raise Exception("The variable hasn't been declared in this scope")
-
-    def put(self, name, type):
-        if self.check(name) == 2:
-            raise Exception('Variable have already been declared')
-        self.objects[name] = type
-
+prior = {
+    '++': 0, '--': 0, '~': 0,
+    '*': 1, '/': 1, '%': 1,
+    '+': 2, '-': 2,
+    '>': 3, '<': 3, '>=': 3, '<=': 3,
+    '==': 4, '!=': 4,
+    '&': 5, '|': 5, '^': 5,
+}
 
 class ExpChecker: # [int/double/string/void, cnt], [res, params], [op]
     def __init__(self):
+        self.all_operands = []
+        self.currentTID = None
         self.stack = []
 
-    def push_type(self, type):
-        self.stack.append(type)
-
     def do(self, op):
+        self.all_operands.append(op)
+
+    def run_polis(self, all_tid: List[TID]):
+        self.stack = []
+        idx = 0
+        while idx < len(self.all_operands):
+            el = self.all_operands[idx]
+            if el[0] == OperandType.SET_TID:
+                self.currentTID = all_tid[el[1]]
+            elif el[0] == OperandType.MOVE:
+                idx = el[1]
+                continue
+            elif el[0] == OperandType.F_MOVE:
+                if not self.stack[-1]:
+                    idx = el[1]
+                    continue
+            elif el[0] == OperandType.VAR:
+                self.stack.append(el[1])
+            elif el[0] == OperandType.OP:
+                self.make_operand(el[1])
+            else:
+                raise 'Something went wrong'
+            idx += 1
+
+    def make_operand(self, op):
         if len(op) == 2:
             res = op[0]
             params = op[1]
@@ -41,6 +54,7 @@ class ExpChecker: # [int/double/string/void, cnt], [res, params], [op]
                     raise Exception('function got unexpected parameter')
             self.stack.append(res)
             return
+
         op = op[0]
         if op == '[]':
             b = self.stack.pop()
@@ -95,5 +109,3 @@ class ExpChecker: # [int/double/string/void, cnt], [res, params], [op]
 
         raise Exception('Unknown operator')
 
-    def clear(self):
-        self.stack = []
