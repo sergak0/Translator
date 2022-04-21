@@ -1,6 +1,6 @@
 from lexical import *
 from polis import *
-from utils import OperandType, VarType
+from utils import OperandType, VarType, Variable
 from tid import TID
 from random import randint
 
@@ -16,8 +16,8 @@ special_tokens_inversed = {
 
 special_tokens = {}
 
-currentTID = TID()
-all_TID = [currentTID]
+currentTID = TID(0)
+all_TID.append(currentTID)
 polis = ExpChecker()
 func_type = None
 
@@ -46,6 +46,15 @@ def Program(idx):
 def Func(idx):
     global currentTID
     global func_type
+
+    stack_cp = polis.all_operands.copy()
+    polis.all_operands.clear()
+
+    currentTID = TID(len(all_TID), currentTID)
+    tid_ind = currentTID.ind
+    polis.do([OperandType.SET_TID, len(all_TID)])
+    all_TID.append(currentTID)
+
     CheckToken(idx, 'fn')
     idx += 1
     idx, dtype, cnt = FuncType(idx, 1)
@@ -54,20 +63,27 @@ def Func(idx):
         raise Exception('Expect (')
     idx += 1
     idx, params, names = Params(idx, 1)
-    currentTID.put(name, ['fn', [VarType(name=dtype, cnt=cnt), params]])
-    func_type = VarType(name=dtype, cnt=cnt)
+    for el in zip(names, params):
+        currentTID.put(el[0], el[1])
+
     if idx == len(tokens) or tokens[idx] != ')':
         raise Exception('Expect )')
     idx += 1
 
-    stack_cp = polis.stack.copy()
-    polis.stack.clear()
-    idx = Block(idx, names=names, types=params)
-    currentTID.objects[name] = ['fn', [VarType(name=dtype, cnt=cnt), params, polis.stack.copy()]]
+    idx = Block(idx, need_new_TID=False)
+
+    currentTID = currentTID.parent
+    currentTID.objects[name] = Function(type=VarType(type_name=dtype, cnt=cnt),
+                                       params=names,
+                                       polis=ExpChecker(polis.all_operands.copy()),
+                                       tid_ind=tid_ind)
+
     if name == 'main':
-        polis.stack = stack_cp + polis.stack
+        polis.all_operands = stack_cp + polis.all_operands
+        if len(names) or dtype != 'void' or cnt != 0:
+            raise Exception('incorrect main func')
     else:
-        polis.stack = stack_cp
+        polis.all_operands = stack_cp
 
     return idx
 
@@ -135,13 +151,13 @@ def Params(idx, ask=0):
     params = []
     names = []
     idx, dtype, cnt = Type(idx, 1)
-    params.append(VarType(name=dtype, cnt=cnt))
+    params.append(VarType(type_name=dtype, cnt=cnt))
     idx, name = Name(idx, 1)
     names.append(name)
     while idx != len(tokens) and tokens[idx] == ',':
         idx += 1
         idx, dtype, cnt = Type(idx, 1)
-        params.append(VarType(name=dtype, cnt=cnt))
+        params.append(VarType(type_name=dtype, cnt=cnt))
         idx, name = Name(idx, 1)
         names.append(name)
     if ask:
@@ -149,17 +165,15 @@ def Params(idx, ask=0):
     return idx
 
 
-def Block(idx, need_new_TID=1, names=[], types=[]):
+def Block(idx, need_new_TID=True):
     global currentTID
     CheckToken(idx, '{')
     idx += 1
+
     if need_new_TID:
-        currentTID = TID(currentTID)
+        currentTID = TID(len(all_TID), currentTID)
         polis.do([OperandType.SET_TID, len(all_TID)])
         all_TID.append(currentTID)
-
-    for name, type in zip(names, types):
-        currentTID.put(name, type)
 
     while True:
         if idx == len(tokens):
@@ -171,6 +185,7 @@ def Block(idx, need_new_TID=1, names=[], types=[]):
 
     if need_new_TID:
         currentTID = currentTID.parent
+        polis.do([OperandType.SET_TID, -1])
     return idx
 
 
@@ -179,17 +194,16 @@ def Operator(idx):
     if idx == len(tokens):
         raise Exception('Expect operator definition')
     if tokens[idx] == 'for':
-        currentTID = TID(currentTID)
+        currentTID = TID(len(all_TID), currentTID)
+        polis.do([OperandType.SET_TID, len(all_TID)])
+        all_TID.append(currentTID)
         idx = For(idx)
+        polis.do([OperandType.SET_TID, -1])
         currentTID = currentTID.parent
     elif tokens[idx] == 'while':
-        currentTID = TID(currentTID)
         idx = While(idx)
-        currentTID = currentTID.parent
     elif tokens[idx] == 'if':
-        currentTID = TID(currentTID)
         idx = If(idx)
-        currentTID = currentTID.parent
     elif tokens[idx] == 'return':
         idx = Return(idx)
     elif tokens[idx] == 'int' or tokens[idx] == 'double' or tokens[idx] == 'string':
@@ -212,33 +226,33 @@ def For(idx):
     CheckToken(idx, ';')
     idx += 1
 
-    start_exp = len(polis.stack)
+    start_exp = len(polis.all_operands)
     idx = Exp(idx)
     CheckToken(idx, ';')
     idx += 1
 
-    move_ind = len(polis.stack)
+    move_ind = len(polis.all_operands)
     polis.do([OperandType.F_MOVE, -1])
-    stack_cp = polis.stack.copy()
+    stack_cp = polis.all_operands.copy()
 
     expr_begin = idx
     idx = Exp(idx)
     CheckToken(idx, ')')
     idx += 1
 
-    polis.stack = stack_cp
-    idx, x = Block(idx, 0)
+    polis.all_operands = stack_cp
+    idx = Block(idx, False)
     _ = Exp(expr_begin)
     polis.do([OperandType.MOVE, start_exp])
-    polis.stack[move_ind][1] = len(polis.stack)
+    polis.all_operands[move_ind][1] = len(polis.all_operands)
     return idx
 
 
 def Definition(idx):
     idx, dtype, cnt = Type(idx, 1)
     idx, name = Name(idx, 1)
-    currentTID.put(name, VarType(name=dtype, cnt=cnt))
-    if idx != len(tokens) and tokens[idx] == '=':
+    currentTID.put(name, VarType(type_name=dtype, cnt=cnt))
+    if idx != len(tokens) and tokens[idx].text == '=':
         polis.do([OperandType.VAR, name])
         idx += 1
         idx = Exp(idx)
@@ -247,8 +261,8 @@ def Definition(idx):
     while idx != len(tokens) and tokens[idx] == ',':
         idx += 1
         idx, name = Name(idx, 1)
-        currentTID.put(name, VarType(name=dtype, cnt=cnt))
-        if idx != len(tokens) and tokens[idx] == '=':
+        currentTID.put(name, VarType(type_name=dtype, cnt=cnt))
+        if idx != len(tokens) and tokens[idx].text == '=':
             polis.do([OperandType.VAR, name])
             idx += 1
             idx = Exp(idx)
@@ -265,19 +279,19 @@ def If(idx):
     CheckToken(idx, ')')
     idx += 1
 
-    move_ind = len(polis.stack)
+    move_ind = len(polis.all_operands)
     polis.do([OperandType.F_MOVE, -1])
 
     idx = Block(idx)
 
-    polis.stack[move_ind][1] = len(polis.stack) + 1
-    move_ind = len(polis.stack)
-    polis.do([OperandType.MOVE, len(polis.stack)])
+    polis.all_operands[move_ind][1] = len(polis.all_operands) + 1
+    move_ind = len(polis.all_operands)
+    polis.do([OperandType.MOVE, len(polis.all_operands)])
 
     if idx != len(tokens) and tokens[idx] == 'else':
         idx += 1
         idx = Block(idx)
-        polis.stack[move_ind][1] = len(polis.stack)
+        polis.all_operands[move_ind][1] = len(polis.all_operands)
 
     return idx
 
@@ -287,16 +301,16 @@ def While(idx):
     idx += 1
     CheckToken(idx, '(')
     idx += 1
-    exp_ind = len(polis.stack)
+    exp_ind = len(polis.all_operands)
     idx = Exp(idx)
     CheckToken(idx, ')')
     idx += 1
 
-    move_ind = len(polis.stack)
+    move_ind = len(polis.all_operands)
     polis.do([OperandType.F_MOVE, -1])
     idx = Block(idx)
     polis.do([OperandType.MOVE, exp_ind])
-    polis.stack[move_ind] = len(polis.stack)
+    polis.all_operands[move_ind][1] = len(polis.all_operands)
 
     return idx
 
@@ -305,7 +319,7 @@ def Return(idx):
     CheckToken(idx, 'return')
     idx += 1
     idx = Exp(idx)
-    polis.do([OperandType.OP, 'return'])
+    polis.do([OperandType.RETURN, 'return'])
     CheckToken(idx, ';')
     idx += 1
     return idx
@@ -337,20 +351,20 @@ def Prior1(idx):
     if idx != len(tokens) and tokens[idx] == '(':
         idx += 1
         if idx != len(tokens) and tokens[idx] == ')':
-            if len(dtype[1][1]):
+            if len(dtype.params):
                 raise Exception('Wrong count of parameters')
-            polis.do([OperandType.VAR, name])
+            polis.do([OperandType.FUNC, name])
             return idx + 1
         else:
             idx, cnt = Enumeration(idx, 1)
-            if len(dtype[1][1]) != cnt:
+            if len(dtype.params) != cnt:
                 raise Exception('Wrong count of parameters')
-            polis.do([OperandType.VAR, name])
+            polis.do([OperandType.FUNC, name])
             CheckToken(idx, ')')
             return idx + 1
 
     polis.do([OperandType.VAR, name])
-    while idx != len(tokens) and tokens[idx] == '[':
+    while idx != len(tokens) and tokens[idx].text == '[':
         idx = Exp(idx + 1)
         CheckToken(idx, ']')
         idx += 1
@@ -361,34 +375,32 @@ def Prior1(idx):
 def Prior2(idx):
     if idx == len(tokens):
         raise Exception('Expression fault')
-    if tokens[idx] in ['--', '++']:
+    if tokens[idx].text in ['--', '++']:
+        token = tokens[idx].text
         idx += 1
         idx = Prior2(idx)
-        polis.do([OperandType.OP, tokens[idx]])
+        polis.do([OperandType.OP, token])
         return idx
 
-    if tokens[idx] == '-':
+    if tokens[idx].text == '-':
         idx += 1
         idx = Prior2(idx)
         polis.do([OperandType.OP, '~'])
         return idx
 
     if tokens[idx].type == 'string_const':
-        name = str(randint(0, 1e9))
-        currentTID.put(name, VarType(name='string', cnt=1, value=tokens[idx].text))
-        polis.do([OperandType.VAR, name])
+        polis.do([OperandType.CONST, Variable(type=VarType(type_name='string', cnt=1),
+                                              value=tokens[idx].text[1:-1])])
         return idx + 1
 
     if tokens[idx].type == 'numeric_const':
-        name = str(randint(0, 1e9))
-        currentTID.put(name, VarType(name='int', cnt=0, value=int(tokens[idx].text)))
-        polis.do([OperandType.VAR, name])
+        polis.do([OperandType.CONST, Variable(type=VarType(type_name='int', cnt=0),
+                                              value=int(tokens[idx].text))])
         return idx + 1
 
     if tokens[idx].type == 'double_const':
-        name = str(randint(0, 1e9))
-        currentTID.put(name, VarType(name='double', cnt=0, value=float(tokens[idx].text)))
-        polis.do([OperandType.VAR, name])
+        polis.do([OperandType.CONST, Variable(type=VarType(type_name='double', cnt=0),
+                                              value=float(tokens[idx].text))])
         return idx + 1
 
     return Prior1(idx)
@@ -398,10 +410,11 @@ def Prior3(idx):
     if idx == len(tokens):
         raise Exception('Expression fault')
     idx = Prior2(idx)
-    if tokens[idx] in ['*', '/', '%']:
+    if tokens[idx].text in ['*', '/', '%']:
+        token = tokens[idx].text
         idx += 1
         idx = Prior3(idx)
-        polis.do([OperandType.OP, tokens[idx]])
+        polis.do([OperandType.OP, token])
         return idx
     return idx
 
@@ -410,10 +423,11 @@ def Prior4(idx):
     if idx == len(tokens):
         raise Exception('Expression fault')
     idx = Prior3(idx)
-    if tokens[idx] in ['+', '-']:
+    if tokens[idx].text in ['+', '-']:
+        token = tokens[idx].text
         idx += 1
         idx = Prior4(idx)
-        polis.do([OperandType.OP, tokens[idx]])
+        polis.do([OperandType.OP, token])
         return idx
 
     return idx
@@ -424,10 +438,11 @@ def Prior5(idx):
         raise Exception('Expression fault')
     idx = Prior4(idx)
 
-    if tokens[idx] in ['>', '<', '>=', '<=']:
+    if tokens[idx].text in ['>', '<', '>=', '<=']:
+        token = tokens[idx].text
         idx += 1
         idx = Prior5(idx)
-        polis.do([OperandType.OP, tokens[idx]])
+        polis.do([OperandType.OP, token])
         return idx
 
     return idx
@@ -437,10 +452,11 @@ def Prior6(idx):
     if idx == len(tokens):
         raise Exception('Expression fault')
     idx = Prior5(idx)
-    if tokens[idx] in ['!=', '==']:
+    if tokens[idx].text in ['!=', '==']:
+        token = tokens[idx].text
         idx += 1
         idx = Prior6(idx)
-        polis.do([OperandType.OP, tokens[idx]])
+        polis.do([OperandType.OP, token])
         return idx
     return idx
 
@@ -450,10 +466,11 @@ def Prior7(idx):
         raise Exception('Expression fault')
     idx = Prior6(idx)
 
-    if tokens[idx] in ['&', '|', '^']:
+    if tokens[idx].text in ['&', '|', '^']:
+        token = tokens[idx].text
         idx += 1
         idx = Prior7(idx)
-        polis.do([OperandType.OP, tokens[idx]])
+        polis.do([OperandType.OP, token])
         return idx
 
     return idx
@@ -494,8 +511,13 @@ if __name__ == "__main__":
         print(token)
     print('Syntactic and Semantic: ')
     Program(0)
-    print(polis.stack)
+    for i, el in enumerate(polis.all_operands):
+        print(i, el)
 
-    currentTID.objects['main'][1][-1] = []
-    if 'main' not in currentTID.objects or currentTID.objects['main'] != ['fn', [['void', 0], [], []]]:
+    polis.run_polis()
+
+    for tid in all_TID:
+        print(tid.objects)
+
+    if 'main' not in currentTID.objects:
         raise Exception("Expect fn int main() in program")

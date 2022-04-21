@@ -3,12 +3,15 @@
 <Func> ::= fn <Type> <Имя> (<Params>) <Block>
 
 <FuncType> ::= int{[]} | double{[]} | string{[]} | nothing
+
 <Type> ::= int{[]} | double{[]} | string{[]}
 
 <Name> ::= <Letter>|<Name><Letter>|<Name><Digit>
+
 <Params> ::= [<Type><Name>{,<Type><Name>}]
 
 <Block> ::= { {<Operator>} }
+
 <Operator> ::= <for> | <while> | <if> | <return> | <Block> | <Exp>; | <Definition>; | <Enumeration>; 
 
 <for> ::= for (<Definition>;<Exp>;<Exp>) <Block>

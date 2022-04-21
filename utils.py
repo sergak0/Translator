@@ -1,6 +1,6 @@
-from ctypes import Union
+from typing import Union
 from enum import Enum
-from typing import Optional
+from typing import Optional, List
 
 from pydantic import BaseModel
 
@@ -9,11 +9,24 @@ class OperandType(str, Enum):
     MOVE = "move"
     F_MOVE = "!F"
     VAR = "variable"
+    CONST = "const"
     OP = 'operator'
+    FUNC = 'function'
+    RETURN = 'return'
     SET_TID = 'set_tid'
 
 
 class VarType(BaseModel):
-    name: str = Union['string', 'int', 'double']
+    type_name: str  # Union['string', 'int', 'double', 'void']
     cnt: int
-    value = Optional[Union[str, int, float]]
+
+
+class Variable(BaseModel):
+    type: VarType
+    value: Optional[Union[int, float, list, str]]
+    par: Optional[list]
+    name: Optional[str]
+
+
+def copy_var(a: Variable):
+    return Variable(type=a.type, value=a.value, par=a.par, name=a.name)

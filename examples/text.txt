@@ -3,12 +3,24 @@ fn void f(double[] a, double b, string c) {
     return 5;
 }
 
+fn string get_s(int x) {
+    string s;
+    for (int i = 0; i < x; ++i) {
+        s = s + "a";
+    }
+    return s;
+}
 
 fn void main() {
     int a = 1;
     double[] d;
     d[2] = 3;
-    int i;
-
-
+    for(int i = 0; i < 5; ++i) {
+       d[4] = d[4] + i;
+    }
+    while (a <= 3) {
+        d[1] = d[1] + a;
+        ++a;
+    }
+    string res = get_s(3) + get_s(2);
 }
