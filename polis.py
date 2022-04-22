@@ -29,29 +29,31 @@ default_value = {
     'void': None,
 }
 
-all_TID: List[TID] = []
-
 
 class ExpChecker:  # [int/double/string/void, cnt], [res, params], [op]
     def __init__(self, all_operands=[]):
         self.all_operands = all_operands
         self.currentTID = None
+        self.global_tid = None
         self.stack = []
 
     def do(self, op) -> None:
         self.all_operands.append(op)
 
-    def run_polis(self) -> Variable:
+    def run_polis(self, global_tid, tid) -> Variable:
         self.stack = []
+        self.global_tid = global_tid
+        self.currentTID = tid
         idx = 0
         while idx < len(self.all_operands):
             el = self.all_operands[idx]
+            print(el)
             # print(idx, el)
             if el[0] == OperandType.SET_TID:
                 if el[1] == -1:
                     self.currentTID = self.currentTID.parent
                 else:
-                    self.currentTID = all_TID[el[1]]
+                    self.currentTID = TID(self.currentTID)
             elif el[0] == OperandType.MOVE:
                 idx = el[1]
                 continue
@@ -69,6 +71,8 @@ class ExpChecker:  # [int/double/string/void, cnt], [res, params], [op]
                 return self.get_val(self.stack.pop())
             elif el[0] == OperandType.OP:
                 self.make_operand(el[1])
+            elif el[0] == OperandType.DEFINE:
+                self.currentTID.put(el[1].name, el[1].type)
             else:
                 raise 'Something went wrong'
             idx += 1
@@ -82,27 +86,14 @@ class ExpChecker:  # [int/double/string/void, cnt], [res, params], [op]
 
         params = fn.params[::-1]
 
-        last_version = []
-        for el in fn.polis.all_operands:
-            if el[0] == OperandType.SET_TID:
-                now = all_TID[el[1]]
-                x = TID(ind=now.ind, parent=now.parent)
-                x.objects = now.objects.copy()
-                last_version.append((el[1], x))
-
-        fn.polis.currentTID = all_TID[fn.tid_ind]
-        fn.polis.stack = []
-        for i, el in enumerate(fn.polis.all_operands):
-            print('fn {} {}'.format(i, el))
+        now_tid = TID(self.global_tid)
 
         for param in params:
-            fn.polis.currentTID.set_value(param, self.get_val(self.stack.pop()))
+            now_tid.put(param, self.get_val(self.stack[-1]).type)
+            now_tid.set_value(param, self.get_val(self.stack.pop()))
 
-        res = fn.polis.run_polis()
+        res = fn.polis.run_polis(global_tid=self.global_tid, tid=now_tid)
         print('Polis TID {}'.format(fn.polis.currentTID.objects))
-
-        for ind, x in last_version:
-            all_TID[ind] = x
 
         if res.type == fn.type:
             self.stack.append(res)
@@ -132,7 +123,7 @@ class ExpChecker:  # [int/double/string/void, cnt], [res, params], [op]
             a = self.get_val(self.stack.pop())
             # print(a, b)
             if a.type.cnt == 0 or b.type != base_types['int']:
-                raise Exception("You can't work with array this way")
+                raise Exception("You can't work with array this way {} {}".format(a, b))
 
             if b.value < 0 or b.value > 1e6:
                 raise Exception('Index of array must be >= 0 and <= 1e6, yours is {}'.format(b.value))
@@ -235,7 +226,6 @@ class Function(BaseModel):
     type: VarType
     params: List[str]
     polis: ExpChecker
-    tid_ind: int
 
     class Config:
         arbitrary_types_allowed = True

@@ -16,8 +16,7 @@ special_tokens_inversed = {
 
 special_tokens = {}
 
-currentTID = TID(0)
-all_TID.append(currentTID)
+currentTID = TID()
 polis = ExpChecker()
 func_type = None
 
@@ -49,37 +48,40 @@ def Func(idx):
 
     stack_cp = polis.all_operands.copy()
     polis.all_operands.clear()
-
-    currentTID = TID(len(all_TID), currentTID)
-    tid_ind = currentTID.ind
-    polis.do([OperandType.SET_TID, len(all_TID)])
-    all_TID.append(currentTID)
+    polis.do([OperandType.SET_TID, 1])
 
     CheckToken(idx, 'fn')
     idx += 1
     idx, dtype, cnt = FuncType(idx, 1)
     idx, name = Name(idx, 1)
+
     if idx == len(tokens) or tokens[idx] != '(':
         raise Exception('Expect (')
     idx += 1
     idx, params, names = Params(idx, 1)
-    for el in zip(names, params):
-        currentTID.put(el[0], el[1])
 
     if idx == len(tokens) or tokens[idx] != ')':
         raise Exception('Expect )')
     idx += 1
 
-    idx = Block(idx, need_new_TID=False)
-
-    currentTID = currentTID.parent
     currentTID.objects[name] = Function(type=VarType(type_name=dtype, cnt=cnt),
                                        params=names,
-                                       polis=ExpChecker(polis.all_operands.copy()),
-                                       tid_ind=tid_ind)
+                                       polis=ExpChecker([]))
 
+    idx = Block(idx, need_new_TID=False)
+
+    polis.do([OperandType.SET_TID, -1])
+
+    currentTID.objects[name].polis.all_operands = polis.all_operands.copy()
+
+    print('put func {}'.format(name))
     if name == 'main':
-        polis.all_operands = stack_cp + polis.all_operands
+        x = polis.all_operands.copy()
+        for i in range(len(x)):
+            if x[i][0] == OperandType.F_MOVE or x[i][0] == OperandType.MOVE:
+                x[i][1] += len(stack_cp)
+
+        polis.all_operands = stack_cp + x
         if len(names) or dtype != 'void' or cnt != 0:
             raise Exception('incorrect main func')
     else:
@@ -171,9 +173,7 @@ def Block(idx, need_new_TID=True):
     idx += 1
 
     if need_new_TID:
-        currentTID = TID(len(all_TID), currentTID)
-        polis.do([OperandType.SET_TID, len(all_TID)])
-        all_TID.append(currentTID)
+        polis.do([OperandType.SET_TID, 1])
 
     while True:
         if idx == len(tokens):
@@ -184,8 +184,8 @@ def Block(idx, need_new_TID=True):
         idx = Operator(idx)
 
     if need_new_TID:
-        currentTID = currentTID.parent
         polis.do([OperandType.SET_TID, -1])
+
     return idx
 
 
@@ -194,14 +194,13 @@ def Operator(idx):
     if idx == len(tokens):
         raise Exception('Expect operator definition')
     if tokens[idx] == 'for':
-        currentTID = TID(len(all_TID), currentTID)
-        polis.do([OperandType.SET_TID, len(all_TID)])
-        all_TID.append(currentTID)
+        polis.do([OperandType.SET_TID, 1])
         idx = For(idx)
         polis.do([OperandType.SET_TID, -1])
-        currentTID = currentTID.parent
     elif tokens[idx] == 'while':
+        polis.do([OperandType.SET_TID, 1])
         idx = While(idx)
+        polis.do([OperandType.SET_TID, -1])
     elif tokens[idx] == 'if':
         idx = If(idx)
     elif tokens[idx] == 'return':
@@ -231,7 +230,7 @@ def For(idx):
     CheckToken(idx, ';')
     idx += 1
 
-    move_ind = len(polis.all_operands)
+    move_id = len(polis.all_operands)
     polis.do([OperandType.F_MOVE, -1])
     stack_cp = polis.all_operands.copy()
 
@@ -244,16 +243,18 @@ def For(idx):
     idx = Block(idx, False)
     _ = Exp(expr_begin)
     polis.do([OperandType.MOVE, start_exp])
-    polis.all_operands[move_ind][1] = len(polis.all_operands)
+
+    polis.all_operands[move_id][1] = len(polis.all_operands)
     return idx
 
 
 def Definition(idx):
     idx, dtype, cnt = Type(idx, 1)
     idx, name = Name(idx, 1)
-    currentTID.put(name, VarType(type_name=dtype, cnt=cnt))
+    polis.do([OperandType.DEFINE, Variable(name=name, type=VarType(type_name=dtype, cnt=cnt))])
+    polis.do([OperandType.VAR, name])
+
     if idx != len(tokens) and tokens[idx].text == '=':
-        polis.do([OperandType.VAR, name])
         idx += 1
         idx = Exp(idx)
         polis.do([OperandType.OP, '='])
@@ -261,9 +262,10 @@ def Definition(idx):
     while idx != len(tokens) and tokens[idx] == ',':
         idx += 1
         idx, name = Name(idx, 1)
-        currentTID.put(name, VarType(type_name=dtype, cnt=cnt))
+        polis.do([OperandType.DEFINE, Variable(name=name, type=VarType(type_name=dtype, cnt=cnt))])
+        polis.do([OperandType.VAR, name])
+
         if idx != len(tokens) and tokens[idx].text == '=':
-            polis.do([OperandType.VAR, name])
             idx += 1
             idx = Exp(idx)
             polis.do([OperandType.OP, '='])
@@ -308,7 +310,7 @@ def While(idx):
 
     move_ind = len(polis.all_operands)
     polis.do([OperandType.F_MOVE, -1])
-    idx = Block(idx)
+    idx = Block(idx, False)
     polis.do([OperandType.MOVE, exp_ind])
     polis.all_operands[move_ind][1] = len(polis.all_operands)
 
@@ -346,9 +348,9 @@ def Prior1(idx):
         return idx + 1
 
     idx, name = Name(idx, 1)
-    dtype = currentTID.get(name)
 
     if idx != len(tokens) and tokens[idx] == '(':
+        dtype = currentTID.get(name)
         idx += 1
         if idx != len(tokens) and tokens[idx] == ')':
             if len(dtype.params):
@@ -511,13 +513,15 @@ if __name__ == "__main__":
         print(token)
     print('Syntactic and Semantic: ')
     Program(0)
-    for i, el in enumerate(polis.all_operands):
-        print(i, el)
-
-    polis.run_polis()
-
-    for tid in all_TID:
-        print(tid.objects)
 
     if 'main' not in currentTID.objects:
         raise Exception("Expect fn int main() in program")
+
+    for i, el in enumerate(polis.all_operands):
+        print(i, el)
+
+    polis.run_polis(currentTID, currentTID)
+
+    for el in currentTID.objects.values():
+        print(el)
+

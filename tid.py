@@ -4,10 +4,10 @@ from utils import VarType, Variable
 
 
 class TID:
-    def __init__(self, ind, parent=None):
+    def __init__(self, parent=None):
         self.parent = parent
-        self.ind = ind
         self.objects = {}
+        print('create tid')
 
     def check(self, name: str) -> int:
         if name in self.objects:

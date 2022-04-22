@@ -14,6 +14,7 @@ class OperandType(str, Enum):
     FUNC = 'function'
     RETURN = 'return'
     SET_TID = 'set_tid'
+    DEFINE = 'define'
 
 
 class VarType(BaseModel):
