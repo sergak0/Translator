@@ -48,12 +48,14 @@ def Func(idx):
 
     stack_cp = polis.all_operands.copy()
     polis.all_operands.clear()
-    polis.do([OperandType.SET_TID, 1])
 
     CheckToken(idx, 'fn')
     idx += 1
     idx, dtype, cnt = FuncType(idx, 1)
     idx, name = Name(idx, 1)
+
+    if name == 'main':
+        polis.do([OperandType.SET_TID, 1])
 
     if idx == len(tokens) or tokens[idx] != '(':
         raise Exception('Expect (')
@@ -70,7 +72,8 @@ def Func(idx):
 
     idx = Block(idx, need_new_TID=False)
 
-    polis.do([OperandType.SET_TID, -1])
+    if name == 'main':
+        polis.do([OperandType.SET_TID, -1])
 
     currentTID.objects[name].polis.all_operands = polis.all_operands.copy()
 
@@ -82,7 +85,7 @@ def Func(idx):
                 x[i][1] += len(stack_cp)
 
         polis.all_operands = stack_cp + x
-        if len(names) or dtype != 'void' or cnt != 0:
+        if len(names) or dtype != 'int' or cnt != 0:
             raise Exception('incorrect main func')
     else:
         polis.all_operands = stack_cp
@@ -288,7 +291,7 @@ def If(idx):
 
     polis.all_operands[move_ind][1] = len(polis.all_operands) + 1
     move_ind = len(polis.all_operands)
-    polis.do([OperandType.MOVE, len(polis.all_operands)])
+    polis.do([OperandType.MOVE, len(polis.all_operands) + 1])
 
     if idx != len(tokens) and tokens[idx] == 'else':
         idx += 1
@@ -517,11 +520,13 @@ if __name__ == "__main__":
     if 'main' not in currentTID.objects:
         raise Exception("Expect fn int main() in program")
 
-    for i, el in enumerate(polis.all_operands):
-        print(i, el)
-
     polis.run_polis(currentTID, currentTID)
 
-    for el in currentTID.objects.values():
-        print(el)
+    for name, el in currentTID.objects.items():
+        if type(el) != Function:
+            print(el)
+            continue
+        print(name)
+        for i, el in enumerate(el.polis.all_operands):
+            print(i, el)
 

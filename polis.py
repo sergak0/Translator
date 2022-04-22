@@ -63,11 +63,13 @@ class ExpChecker:  # [int/double/string/void, cnt], [res, params], [op]
                     continue
             elif el[0] == OperandType.VAR:
                 self.stack.append(el[1])
+                print('tid = {}'.format(self.currentTID.objects))
             elif el[0] == OperandType.CONST:
                 self.stack.append(el[1])
             elif el[0] == OperandType.FUNC:
                 self.make_func(el[1])
             elif el[0] == OperandType.RETURN:
+                print('')
                 return self.get_val(self.stack.pop())
             elif el[0] == OperandType.OP:
                 self.make_operand(el[1])
@@ -81,6 +83,7 @@ class ExpChecker:  # [int/double/string/void, cnt], [res, params], [op]
 
     def make_func(self, name: str) -> None:
         fn: Function = self.currentTID.get(name)
+        fn = Function(type=fn.type, params=fn.params, polis=ExpChecker(fn.polis.all_operands))
         if type(fn) != Function:
             raise Exception('variable cannot be used with ()')
 
@@ -93,7 +96,6 @@ class ExpChecker:  # [int/double/string/void, cnt], [res, params], [op]
             now_tid.set_value(param, self.get_val(self.stack.pop()))
 
         res = fn.polis.run_polis(global_tid=self.global_tid, tid=now_tid)
-        print('Polis TID {}'.format(fn.polis.currentTID.objects))
 
         if res.type == fn.type:
             self.stack.append(res)
@@ -181,6 +183,7 @@ class ExpChecker:  # [int/double/string/void, cnt], [res, params], [op]
                     a.value[ind] = val
 
                 self.currentTID.set_value(a.name, a)
+
                 return
 
             if a.type.type_name in ['int', 'double'] and b.type.type_name in ['int', 'double'] and a.type.cnt == b.type.cnt:

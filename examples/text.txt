@@ -14,9 +14,10 @@ fn string get_s(int x) {
     return get_s(x - 1) + "#" + s;
 }
 
-string s = "b" + get_s(3) + "b";
+string e = "b" + get_s(3) + "b";
 
-fn void main() {
+fn int main() {
+    return 1;
     int a = 1;
     double[] d;
     d[2] = 3;
