@@ -69,7 +69,6 @@ class ExpChecker:  # [int/double/string/void, cnt], [res, params], [op]
             elif el[0] == OperandType.FUNC:
                 self.make_func(el[1])
             elif el[0] == OperandType.RETURN:
-                print('')
                 return self.get_val(self.stack.pop())
             elif el[0] == OperandType.OP:
                 self.make_operand(el[1])
@@ -92,8 +91,12 @@ class ExpChecker:  # [int/double/string/void, cnt], [res, params], [op]
         now_tid = TID(self.global_tid)
 
         for param in params:
-            now_tid.put(param, self.get_val(self.stack[-1]).type)
-            now_tid.set_value(param, self.get_val(self.stack.pop()))
+            x = self.get_val(self.stack.pop())
+            if param.type != x.type:
+                raise Exception('Got unexpected type of parameter in function')
+
+            now_tid.put(param.name, param.type)
+            now_tid.set_value(param.name, x)
 
         res = fn.polis.run_polis(global_tid=self.global_tid, tid=now_tid)
 
@@ -119,7 +122,34 @@ class ExpChecker:  # [int/double/string/void, cnt], [res, params], [op]
 
         return ans
 
+    def try_cast_type(self, var: Variable, t: VarType):
+        if var.type == base_types['string']:
+            if t == base_types['int']:
+                try:
+                    var.value = int(var.value)
+                    var.type = t
+                except:
+                    raise Exception("Can't convert {} to int".format(var.value))
+            elif t == base_types['double']:
+                try:
+                    var.value = float(var.value)
+                    var.type = t
+                except:
+                    raise Exception("Can't convert {} to double".format(var.value))
+
+            else:
+                return
+
     def make_operand(self, op):
+        if op == 'input':
+            x = input()
+            self.stack.append(Variable(type=base_types['string'], value=x))
+            return
+
+        if op == 'print':
+            print("MY PRINT: ", self.get_val(self.stack.pop()))
+            return
+
         if op == '[]':
             b = self.get_val(self.stack.pop())
             a = self.get_val(self.stack.pop())
@@ -175,6 +205,7 @@ class ExpChecker:  # [int/double/string/void, cnt], [res, params], [op]
             raise Exception(str(a) + ' ' + str(op) + ' ' + str(b) + ' is not available')
 
         if op in ['=']:
+            self.try_cast_type(b, a.type)
             if a.type == b.type:
                 a.value = b.value
                 while a.par is not None:
@@ -227,7 +258,7 @@ class ExpChecker:  # [int/double/string/void, cnt], [res, params], [op]
 
 class Function(BaseModel):
     type: VarType
-    params: List[str]
+    params: List[Variable]
     polis: ExpChecker
 
     class Config:

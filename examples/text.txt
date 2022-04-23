@@ -17,7 +17,6 @@ fn string get_s(int x) {
 string e = "b" + get_s(3) + "b";
 
 fn int main() {
-    return 1;
     int a = 1;
     double[] d;
     d[2] = 3;
@@ -28,5 +27,7 @@ fn int main() {
         d[1] = d[1] + a;
         ++a;
     }
-    string res = get_s(3) + get_s(2);
+    int x = input();
+    string res = get_s(x);
+    print(res);
 }

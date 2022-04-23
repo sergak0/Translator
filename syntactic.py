@@ -67,7 +67,7 @@ def Func(idx):
     idx += 1
 
     currentTID.objects[name] = Function(type=VarType(type_name=dtype, cnt=cnt),
-                                       params=names,
+                                       params=[Variable(type=params[i], name=names[i]) for i in range(len(params))],
                                        polis=ExpChecker([]))
 
     idx = Block(idx, need_new_TID=False)
@@ -514,7 +514,15 @@ if __name__ == "__main__":
     tokens = fsm.process(text)
     for token in tokens:
         print(token)
+
     print('Syntactic and Semantic: ')
+    currentTID.objects['input'] = Function(type=VarType(type_name='string', cnt=1),
+                                           params=[],
+                                           polis=ExpChecker([[OperandType.OP, 'input'], [OperandType.RETURN, 'return']]))
+
+    currentTID.objects['print'] = Function(type=VarType(type_name='void', cnt=0),
+                                           params=[Variable(name='x', type=VarType(type_name='string', cnt=1))],
+                                           polis=ExpChecker([[OperandType.VAR, 'x'], [OperandType.OP, 'print']]))
     Program(0)
 
     if 'main' not in currentTID.objects:
