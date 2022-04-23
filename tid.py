@@ -7,7 +7,6 @@ class TID:
     def __init__(self, parent=None):
         self.parent = parent
         self.objects = {}
-        print('create tid')
 
     def check(self, name: str) -> int:
         if name in self.objects:
@@ -28,7 +27,7 @@ class TID:
         if name in self.objects:
             if self.objects[name].type == value.type:
                 self.objects[name].value = value.value
-                print(f'setted value {value.value} for {name}')
+                # print(f'setted value {value.value} for {name}')
                 return None
             else:
                 raise Exception('Incompatible types')

@@ -26,9 +26,9 @@ fn int main() {
 
     for(int i = 0; i < 5; ++i) {
         for(int j = 0; j < 2; ++j) {
-            print(cast_string(d[i][j]));
+            print(cast_string(d[i][j]) + " ");
         }
-        print("j");
+        print("\n");
     }
 
     int x = cast_int(input());

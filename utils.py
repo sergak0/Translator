@@ -4,6 +4,8 @@ from typing import Optional, List
 
 from pydantic import BaseModel
 
+DEBUG = False
+
 
 class OperandType(str, Enum):
     MOVE = "move"
@@ -31,4 +33,6 @@ class Variable(BaseModel):
 
 
 def copy_var(a: Variable):
-    return Variable(type=a.type, value=a.value, par=a.par, name=a.name)
+    x = Variable(type=a.type, par=a.par, name=a.name)
+    x.value = a.value
+    return x

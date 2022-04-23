@@ -3,7 +3,7 @@ from typing import Union
 from pydantic import BaseModel
 
 from tid import TID
-from utils import OperandType, VarType, Variable, copy_var
+from utils import OperandType, VarType, Variable, copy_var, DEBUG
 from typing import List
 
 
@@ -47,8 +47,8 @@ class ExpChecker:  # [int/double/string/void, cnt], [res, params], [op]
         idx = 0
         while idx < len(self.all_operands):
             el = self.all_operands[idx]
-            print(el)
-            # print(idx, el)
+            if DEBUG:
+                print(el)
             if el[0] == OperandType.SET_TID:
                 if el[1] == -1:
                     self.currentTID = self.currentTID.parent
@@ -63,7 +63,8 @@ class ExpChecker:  # [int/double/string/void, cnt], [res, params], [op]
                     continue
             elif el[0] == OperandType.VAR:
                 self.stack.append(el[1])
-                print('tid = {}'.format(self.currentTID.objects))
+                if DEBUG:
+                    print('tid = {}'.format(self.currentTID.objects))
             elif el[0] == OperandType.CONST:
                 self.stack.append(el[1])
             elif el[0] == OperandType.FUNC:
@@ -75,7 +76,8 @@ class ExpChecker:  # [int/double/string/void, cnt], [res, params], [op]
             elif el[0] == OperandType.DEFINE:
                 self.currentTID.put(el[1].name, el[1].type)
             elif el[0] == OperandType.CAST:
-                self.stack.append(self.try_cast_type(self.get_val(self.stack.pop()), el[1]))
+                x = self.try_cast_type(self.get_val(self.stack.pop()), el[1])
+                self.stack.append(x)
             else:
                 raise 'Something went wrong'
             idx += 1
@@ -94,13 +96,11 @@ class ExpChecker:  # [int/double/string/void, cnt], [res, params], [op]
 
         for param in params:
             x = self.get_val(self.stack.pop())
-            if name in ['cast_int', 'cast_string', 'cast_double']:
-                param.type = x.type
 
-            if param.type != x.type:
+            if param.type != x.type and param.type.type_name != 'void':
                 raise Exception('Got unexpected type of parameter in function')
 
-            now_tid.put(param.name, param.type)
+            now_tid.put(param.name, x.type)
             now_tid.set_value(param.name, x)
 
         res = fn.polis.run_polis(global_tid=self.global_tid, tid=now_tid)
@@ -115,7 +115,6 @@ class ExpChecker:  # [int/double/string/void, cnt], [res, params], [op]
             ans = self.currentTID.get(x)
         else:
             ans = x
-
         ans = copy_var(ans)
         if ans.value is None:
             ans.value = default_value[ans.type.type_name]
@@ -133,14 +132,16 @@ class ExpChecker:  # [int/double/string/void, cnt], [res, params], [op]
         try:
             if t == 'string':
                 var.value = str(var.value)
+                var.type = base_types[t]
             if t == 'int':
                 var.value = int(var.value)
+                var.type = base_types[t]
             if t == 'double':
                 var.value = float(var.value)
-
-            var.type = base_types[t]
+                var.type = base_types[t]
         except:
             raise Exception("Cannot convert {} to {}".format(var, t))
+
         return var
 
     def make_operand(self, op):
@@ -150,7 +151,10 @@ class ExpChecker:  # [int/double/string/void, cnt], [res, params], [op]
             return
 
         if op == 'print':
-            print("MY PRINT: ", self.get_val(self.stack.pop()), end='')
+            if DEBUG:
+                print("MY PRINT: ", self.get_val(self.stack.pop()), end='')
+            else:
+                print(self.get_val(self.stack.pop()).value.replace('\\n', '\n'), end='')
             return
 
         if op == '[]':
@@ -197,6 +201,7 @@ class ExpChecker:  # [int/double/string/void, cnt], [res, params], [op]
         if op in ['+']:
             if (a.type == base_types['string'] and b.type == base_types['string']) or \
                     (a.type == base_types['int'] and b.type == base_types['int']):
+
                 a.value += b.value
                 self.stack.append(a)
                 return

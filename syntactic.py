@@ -77,7 +77,6 @@ def Func(idx):
 
     currentTID.objects[name].polis.all_operands = polis.all_operands.copy()
 
-    print('put func {}'.format(name))
     if name == 'main':
         x = polis.all_operands.copy()
         for i in range(len(x)):
