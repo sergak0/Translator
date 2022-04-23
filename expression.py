@@ -31,7 +31,9 @@ brace_pair = {
 def find_end_of_expression(text):
     cnt_open = {'(': 0, '[': 0}
     for i, el in enumerate(text):
-        if el == ';' or el == ',':
+        if el == ';' or el == ',' or el == '{':
+            if cnt_open['('] != 0 or cnt_open['['] != 0:
+                raise 'brace balance is incorrect'
             return i
         if el == '(' or el == '[':
             cnt_open[el] += 1
