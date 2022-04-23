@@ -523,6 +523,11 @@ if __name__ == "__main__":
     currentTID.objects['print'] = Function(type=VarType(type_name='void', cnt=0),
                                            params=[Variable(name='x', type=VarType(type_name='string', cnt=1))],
                                            polis=ExpChecker([[OperandType.VAR, 'x'], [OperandType.OP, 'print']]))
+
+    for t in ['int', 'string', 'double']:
+        currentTID.objects['cast_' + t] = Function(type=VarType(type_name=t, cnt=(t == 'string')),
+                                         params=[Variable(name='x', type=VarType(type_name='void', cnt=0))],
+                                         polis=ExpChecker([[OperandType.VAR, 'x'], [OperandType.CAST, t], [OperandType.RETURN, 'return']]))
     Program(0)
 
     if 'main' not in currentTID.objects:

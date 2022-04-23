@@ -74,6 +74,8 @@ class ExpChecker:  # [int/double/string/void, cnt], [res, params], [op]
                 self.make_operand(el[1])
             elif el[0] == OperandType.DEFINE:
                 self.currentTID.put(el[1].name, el[1].type)
+            elif el[0] == OperandType.CAST:
+                self.stack.append(self.try_cast_type(self.get_val(self.stack.pop()), el[1]))
             else:
                 raise 'Something went wrong'
             idx += 1
@@ -92,6 +94,9 @@ class ExpChecker:  # [int/double/string/void, cnt], [res, params], [op]
 
         for param in params:
             x = self.get_val(self.stack.pop())
+            if name in ['cast_int', 'cast_string', 'cast_double']:
+                param.type = x.type
+
             if param.type != x.type:
                 raise Exception('Got unexpected type of parameter in function')
 
@@ -123,22 +128,20 @@ class ExpChecker:  # [int/double/string/void, cnt], [res, params], [op]
         return ans
 
     def try_cast_type(self, var: Variable, t: VarType):
-        if var.type == base_types['string']:
-            if t == base_types['int']:
-                try:
-                    var.value = int(var.value)
-                    var.type = t
-                except:
-                    raise Exception("Can't convert {} to int".format(var.value))
-            elif t == base_types['double']:
-                try:
-                    var.value = float(var.value)
-                    var.type = t
-                except:
-                    raise Exception("Can't convert {} to double".format(var.value))
+        if var.type not in base_types.values():
+            raise Exception("cannot convert {} to {}".format(var, t))
+        try:
+            if t == 'string':
+                var.value = str(var.value)
+            if t == 'int':
+                var.value = int(var.value)
+            if t == 'double':
+                var.value = float(var.value)
 
-            else:
-                return
+            var.type = base_types[t]
+        except:
+            raise Exception("Cannot convert {} to {}".format(var, t))
+        return var
 
     def make_operand(self, op):
         if op == 'input':
@@ -147,7 +150,7 @@ class ExpChecker:  # [int/double/string/void, cnt], [res, params], [op]
             return
 
         if op == 'print':
-            print("MY PRINT: ", self.get_val(self.stack.pop()))
+            print("MY PRINT: ", self.get_val(self.stack.pop()), end='')
             return
 
         if op == '[]':
@@ -190,6 +193,7 @@ class ExpChecker:  # [int/double/string/void, cnt], [res, params], [op]
 
         b: Variable = self.get_val(self.stack.pop())
         a: Variable = self.get_val(self.stack.pop())
+
         if op in ['+']:
             if (a.type == base_types['string'] and b.type == base_types['string']) or \
                     (a.type == base_types['int'] and b.type == base_types['int']):
@@ -205,7 +209,6 @@ class ExpChecker:  # [int/double/string/void, cnt], [res, params], [op]
             raise Exception(str(a) + ' ' + str(op) + ' ' + str(b) + ' is not available')
 
         if op in ['=']:
-            self.try_cast_type(b, a.type)
             if a.type == b.type:
                 a.value = b.value
                 while a.par is not None:
@@ -214,7 +217,6 @@ class ExpChecker:  # [int/double/string/void, cnt], [res, params], [op]
                     a.value[ind] = val
 
                 self.currentTID.set_value(a.name, a)
-
                 return
 
             if a.type.type_name in ['int', 'double'] and b.type.type_name in ['int', 'double'] and a.type.cnt == b.type.cnt:
