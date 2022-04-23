@@ -532,8 +532,6 @@ if __name__ == "__main__":
     if 'main' not in currentTID.objects:
         raise Exception("Expect fn int main() in program")
 
-    polis.run_polis(currentTID, currentTID)
-
     for name, el in currentTID.objects.items():
         if type(el) != Function:
             print(el)
@@ -541,4 +539,6 @@ if __name__ == "__main__":
         print(name)
         for i, el in enumerate(el.polis.all_operands):
             print(i, el)
+
+    polis.run_polis(currentTID, currentTID)
 

@@ -1,8 +1,4 @@
 
-fn void f(double[] a, double b, string c) {
-    return 5;
-}
-
 fn string get_s(int x) {
     if (x == 0) {
         return "";
@@ -17,21 +13,24 @@ fn string get_s(int x) {
 string e = "b" + get_s(3) + "b";
 
 fn int main() {
-    int a = 1;
-    double[][] d;
-    d[2][0] = 3;
-    for(int i = 0; i < 5; ++i) {
-       d[i][0] = d[i][0] + i;
+    int n;
+    n = cast_int(input());
+    int[] a;
+    for (int i = 0; i < n; ++i) {
+        a[i] = cast_int(input());
     }
 
-    for(int i = 0; i < 5; ++i) {
-        for(int j = 0; j < 2; ++j) {
-            print(cast_string(d[i][j]) + " ");
+    for (int i = 0; i < n; ++i) {
+        for (int j = i + 1; j < n; ++j) {
+            if (a[i] > a[j]) {
+                int tmp = a[i];
+                a[i] = a[j];
+                a[j] = tmp;
+            }
         }
-        print("\n");
     }
 
-    int x = cast_int(input());
-    string res = get_s(x);
-    print(res);
+    for (int i = 0; i < n; ++i) {
+        print(cast_string(a[i]) + " ");
+    }
 }
