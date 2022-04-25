@@ -10,6 +10,16 @@ fn string get_s(int x) {
     return get_s(x - 1) + "#" + s;
 }
 
+fn int akkerman(int n, int m) {
+    if (m == 0) {
+        return n + 1;
+    }
+    if (n == 0) {
+        return akkerman(1, m - 1);
+    }
+    return akkerman(akkerman(n - 1, m), m - 1);
+}
+
 string e = "b" + get_s(3) + "b";
 
 fn int main() {
@@ -33,4 +43,9 @@ fn int main() {
     for (int i = 0; i < n; ++i) {
         print(cast_string(a[i]) + " ");
     }
+
+    int x, y;
+    x = cast_int(input());
+    y = cast_int(input());
+    print(cast_string(akkerman(x, y)));
 }

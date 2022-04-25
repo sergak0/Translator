@@ -98,7 +98,7 @@ class ExpChecker:  # [int/double/string/void, cnt], [res, params], [op]
             x = self.get_val(self.stack.pop())
 
             if param.type != x.type and param.type.type_name != 'void':
-                raise Exception('Got unexpected type of parameter in function')
+                raise Exception('Got unexpected type of parameter in function: exepted {}, got {}'.format(param.type, x))
 
             now_tid.put(param.name, x.type)
             now_tid.set_value(param.name, x)
